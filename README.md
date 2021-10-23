@@ -11,3 +11,11 @@ The model prediction results, evaluated by AUC, ranked **2/75** in the competiti
 * Competition website: https://mays.tamu.edu/humana-tamu-analytics/
 
 * Leaderboard: https://mays.tamu.edu/humana-tamu-analytics/top-50-teams/
+
+# Contact
+
+* Robert Tedesco
+
+* Louis Jane Dulana
+
+* [Quang Nguyen](https://github.com/qntkhvn)   
