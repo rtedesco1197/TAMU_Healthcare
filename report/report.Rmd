@@ -68,7 +68,7 @@ We first wanted to reduce the size of our data, in particular, the number of col
 After cleaning up the data, we summarized the COVID vaccination status for members and looked for trends among various predictors. First, we looked at the relationship between whether or not a member is vaccinated versus age and gender. We decided to convert age, which was originally a continuous variable, into discrete intervals (bins), for the purpose of exploratory analysis only. The age groups that we partitioned age into are 20-55, 55-65, 65-75, and 75+. We could see from Figure 1 that older members tend to have higher vaccination rate than younger members. Moreover, within each age group, the vaccination percentage is higher for female members than the male group.
 
 ```{r}
-splits <- read_rds("splits69.rds")
+splits <- read_rds("tidy_splits.rds")
 train <- training(splits)
 test <- testing(splits)
 ```
