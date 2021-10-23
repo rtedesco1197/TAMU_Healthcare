@@ -6,6 +6,7 @@ output:
   pdf_document: 
     number_sections: yes
     df_print: kable
+    keep_tex: yes
 abstract: 
 header-includes:
  \usepackage{setspace}
