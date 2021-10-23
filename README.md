@@ -2,7 +2,7 @@
 
 ## About
 
-In this competition, we built a classification model using CatBoost. Using over 350 variables, we attempt to predict vaccination status using a holdout set of 750,000 obsrvations and a test set of 250,000 observations. 
+In this competition, we built a classification model using CatBoost. We attempted to predict vaccination status on a holdout dataset of 525,158 observations using a training dataset of 974,842 obsrvations and over 350 variables.
 
 The model prediction results, evaluated by AUC, ranked **2/75** in the competition round 1 leaderboard.
 
