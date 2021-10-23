@@ -9,3 +9,5 @@ The model prediction results, evaluated by AUC, ranked **2/75** in the competiti
 # Information
 
 * Competition website: https://mays.tamu.edu/humana-tamu-analytics/
+
+* Leaderboard: https://mays.tamu.edu/humana-tamu-analytics/top-50-teams/
