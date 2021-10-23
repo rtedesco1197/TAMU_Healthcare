@@ -1,0 +1,328 @@
+---
+title: "Catboost"
+output: html_document
+---
+
+```{r}
+# install.packages("devtools")
+# install catboost from github url
+devtools::install_url('https://github.com/catboost/catboost/releases/download/v1.0.0/catboost-R-Windows-1.0.0.tgz')
+```
+
+# Packages
+
+Make sure to these are installed first.
+
+```{r}
+#library(catboost) # no error = successful installation
+library(tidymodels)
+library(tidyverse)
+library(janitor)
+#library(treesnip)
+```
+
+
+# Data
+
+(Change the file path)
+
+```{r}
+zv <-
+  c(
+    "auth_3mth_post_acute_dia",
+    "bh_ip_snf_net_paid_pmpm_cost_9to12m_b4",
+    "auth_3mth_acute_ckd",
+    "bh_ip_snf_net_paid_pmpm_cost_3to6m_b4",
+    "auth_3mth_post_acute_trm",
+    "auth_3mth_post_acute_rsk",
+    "auth_3mth_acute_vco",
+    "auth_3mth_dc_ltac",
+    "auth_3mth_post_acute_inj",
+    "bh_ip_snf_mbr_resp_pmpm_cost_6to9m_b4",
+    "auth_3mth_post_acute_ben",
+    "auth_3mth_acute_ccs_048",
+    "bh_ip_snf_net_paid_pmpm_cost_0to3m_b4",
+    "auth_3mth_hospice",
+    "auth_3mth_acute_bld",
+    "auth_3mth_acute_ccs_030",
+    "auth_3mth_acute_neo",
+    "auth_3mth_post_acute_vco",
+    "auth_3mth_post_acute_dig",
+    "auth_3mth_post_acute_hdz",
+    "bh_ip_snf_mbr_resp_pmpm_cost_3to6m_b4",
+    "auth_3mth_acute_ccs_172",
+    "auth_3mth_acute_ccs_154",
+    "bh_ip_snf_mbr_resp_pmpm_cost_9to12m_b4",
+    "auth_3mth_post_acute_cir",
+    "auth_3mth_post_acute_cer",
+    "auth_3mth_post_acute_mus",
+    "bh_ip_snf_net_paid_pmpm_cost_6to9m_b4",
+    "auth_3mth_post_acute_sns",
+    "auth_3mth_acute_can",
+    "auth_3mth_post_acute_men",
+    "auth_3mth_acute_ccs_153",
+    "auth_3mth_transplant",
+    "auth_3mth_acute_ccs_227",
+    "auth_3mth_ltac",
+    "auth_3mth_acute_men",
+    "auth_3mth_acute_ccs_086",
+    "auth_3mth_acute_cer",
+    "auth_3mth_acute_trm",
+    "auth_3mth_acute_dia",
+    "auth_3mth_snf_direct",
+    "auth_3mth_acute_ccs_067",
+    "auth_3mth_acute_ccs_043",
+    "auth_3mth_acute_ner",
+    "auth_3mth_acute_ccs_094",
+    "auth_3mth_post_acute_cad",
+    "auth_3mth_acute_ccs_044",
+    "auth_3mth_post_acute_ckd",
+    "auth_3mth_post_acute_ner",
+    "auth_3mth_post_acute_chf",
+    "auth_3mth_acute_ccs_042",
+    "auth_3mth_post_acute_inf",
+    "auth_3mth_post_acute_gus",
+    "auth_3mth_post_acute_end"
+  )
+
+conv <-
+  c(
+    "auth_3mth_dc_home",
+    "bh_ncdm_ind",
+    "atlas_retirement_destination_2015_upda",
+    "auth_3mth_dc_no_ref",
+    "auth_3mth_dc_snf",
+    "auth_3mth_acute_end",
+    "auth_3mth_psychic",
+    "atlas_hiamenity",
+    "auth_3mth_bh_acute",
+    "auth_3mth_acute_chf",
+    "auth_3mth_dc_hospice",
+    "auth_3mth_acute_skn",
+    "atlas_hipov_1115",
+    "auth_3mth_acute_res",
+    "atlas_foodhub16",
+    "auth_3mth_acute_dig",
+    "auth_3mth_dc_acute_rehab",
+    "atlas_type_2015_mining_no",
+    "auth_3mth_post_acute_res",
+    "auth_3mth_acute_inf",
+    "atlas_low_employment_2015_update",
+    "auth_3mth_non_er",
+    "auth_3mth_acute_cad",
+    "cms_orig_reas_entitle_cd",
+    "bh_ncal_ind",
+    "atlas_type_2015_recreation_no",
+    "auth_3mth_post_acute",
+    "auth_3mth_facility",
+    "atlas_population_loss_2015_update",
+    "auth_3mth_home",
+    "atlas_farm_to_school13",
+    "auth_3mth_acute_inj",
+    "auth_3mth_acute",
+    "auth_3mth_dc_left_ama",
+    "auth_3mth_bh_acute_men",
+    "auth_3mth_dc_custodial",
+    "auth_3mth_acute_hdz",
+    "auth_3mth_rehab",
+    "auth_3mth_snf_post_hsp",
+    "auth_3mth_dc_home_health",
+    "rx_gpi2_56_dist_gpi6_pmpm_ct_3to6m_b4",
+    "auth_3mth_acute_cir",
+    "atlas_persistentchildpoverty_1980_2011",
+    "ccsp_065_pmpm_ct",
+    "auth_3mth_post_er",
+    "auth_3mth_acute_sns",
+    "auth_3mth_dc_other",
+    "auth_3mth_bh_acute_mean_los",
+    "auth_3mth_acute_mus",
+    "atlas_perpov_1980_0711",
+    "auth_3mth_acute_gus",
+    "atlas_low_education_2015_update",
+    "race_cd"
+  )
+
+
+train_raw <- read_csv("2021_Competition_Training.csv", na = c("*", "")) %>%
+  clean_names()
+  
+test_raw <- read_csv("2021_Competition_Holdout.csv", na = c("*", "")) %>%
+  clean_names()
+
+train <- train_raw %>% 
+  select(-1, -2, -all_of(zv)) %>% 
+  mutate(src_div_id = str_remove(src_div_id, "00"),
+         across(.cols = conv, as.character),
+         covid_vaccination = as.factor(covid_vaccination),
+         #across(where(is.character), as.factor)
+        )
+
+test <- test_raw %>% 
+  select(-1, -2, -all_of(zv)) %>% 
+  mutate(src_div_id = str_remove(src_div_id, "00"),
+         across(.cols = conv, as.character),
+         #across(where(is.character), as.factor)
+         )
+```
+
+# Modeling
+
+```{r}
+set.seed(12)
+cb_split <- initial_split(train, strata = covid_vaccination)
+cb_train <- training(cb_split)
+cb_test <- testing(cb_split)
+```
+
+```{r}
+set.seed(21)
+cb_folds <- vfold_cv(cb_train, v = 3) # 3-fold cv
+```
+
+```{r}
+cb_spec <-
+  boost_tree(
+    trees = 1000,
+    tree_depth = tune(),
+    min_n = tune(),
+    loss_reduction = tune(),
+    sample_size = tune(),
+    mtry = tune(),
+    learn_rate = tune()
+  ) %>%
+  set_engine("xgboost") %>%
+  set_mode("classification")
+```
+
+```{r}
+cb_rec <- recipe(covid_vaccination ~ ., data = cb_train) %>% 
+  step_unknown(all_nominal_predictors()) %>%
+  step_dummy(all_nominal_predictors()) %>%
+  step_impute_median(all_numeric_predictors())
+```
+
+```{r}
+cb_wf <- workflow() %>% 
+  add_model(cb_spec) %>% 
+  add_recipe(cb_rec)
+```
+
+Grid
+
+```{r}
+cb_grid <- grid_latin_hypercube(
+  tree_depth(),
+  min_n(),
+  loss_reduction(),
+  #sample_size = sample_prop(),
+  #finalize(mtry(), cb_train),
+  learn_rate(),
+  size = 30
+)
+```
+
+
+```{r}
+library(finetune)
+doParallel::registerDoParallel()
+cb_tune <- tune_race_anova(
+  cb_wf,
+  resamples = cb_folds,
+  grid = 15,
+  metrics = metric_set(roc_auc),
+  control = control_race(verbose_elim = TRUE)
+)
+```
+
+Tuning
+
+```{r}
+#cb_tune <- tune_grid(
+#  object = cb_wf,
+#  resamples = cb_folds,
+#  grid = cb_grid,
+#  metrics = metric_set(roc_auc),
+# control = control_grid(save_pred = TRUE)
+#)
+```
+
+```{r}
+cb_tune %>% 
+  autoplot()
+```
+
+```{r}
+cb_tune %>%
+  collect_metrics() %>%
+  filter(.metric == "roc_auc") %>%
+  select(mean, mtry:sample_size) %>%
+  pivot_longer(mtry:sample_size,
+               values_to = "value",
+               names_to = "parameter"
+  ) %>%
+  ggplot(aes(value, mean, color = parameter)) +
+  geom_point(alpha = 0.8, show.legend = FALSE) +
+  facet_wrap(~ parameter, scales = "free_x") +
+  labs(x = NULL, y = "AUC")
+```
+
+
+Best set of hyperparameters
+
+```{r}
+best_auc <- cb_tune %>% 
+  select_best("roc_auc")
+```
+
+```{r}
+cb_final <- finalize_workflow(
+  cb_wf,
+  best_auc
+)
+
+cb_final
+```
+
+Variable importance
+
+```{r}
+library(vip)
+
+cb_final %>% 
+  fit(data = cb_train) %>%
+  pull_workflow_fit() %>%
+  vip()
+```
+
+
+Fit one final time to the training data and evaluate one final time on the testing data
+
+```{r}
+cb_last <- last_fit(cb_final, cb_split)
+```
+
+
+ROC curve
+
+```{r}
+cb_last %>% 
+  collect_predictions() %>% 
+  roc_curve(covid_vaccination, .pred_no_vacc) %>%
+  ggplot(aes(1 - specificity, sensitivity)) +
+  geom_abline(slope = 1, lty = 2) +
+  geom_path(size = 1.5, color = "midnightblue")
+```
+
+Predictions
+
+```{r}
+cb_fit_final <- cb_wf %>%
+  finalize_workflow(select_best(cb_tune)) %>%
+  fit(train_raw)
+```
+
+```{r}
+cb_preds <- cb_fit_final %>% 
+  augment(test)
+```
+
