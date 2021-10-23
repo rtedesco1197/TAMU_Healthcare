@@ -14,8 +14,10 @@ The model prediction results, evaluated by AUC, ranked **2/75** in the competiti
 
 # Contact
 
+Feel free to reach out to us for questions and suggestions!
+
 * Robert Tedesco
 
 * Louis Jane Dulana
 
-* [Quang Nguyen](https://github.com/qntkhvn)   
+* [Quang Nguyen](https://qntkhvn.netlify.app/)   
