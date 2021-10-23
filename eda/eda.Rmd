@@ -1,0 +1,217 @@
+---
+title: "EDA Figures"
+output: 
+  html_document: 
+    df_print: kable
+    toc: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(message = FALSE,
+                      warning = FALSE,
+                      comment = "")
+```
+
+## Set up
+
+### Packages
+
+```{r}
+library(tidyverse)
+library(tidymodels)
+library(janitor)
+theme_set(theme_light())
+```
+
+### Data
+
+```{r, eval = FALSE}
+train_raw <- read_csv("data/2021_Competition_Training.csv", 
+                      na = c("*", "")) %>% 
+  select(-1) %>% 
+  clean_names()
+
+test_raw <- read_csv("data/2021_Competition_Holdout.csv", 
+                     na = c("*", "")) %>% 
+  select(-1) %>% 
+  clean_names()
+```
+
+### Splits before EDA 
+
+(EDA only on the train set)
+
+```{r, eval = FALSE}
+set.seed(100)
+splits <- train_raw %>% 
+  initial_split(strata = covid_vaccination)
+
+train <- training(splits)
+test <- testing(splits)
+```
+
+```{r, echo = FALSE}
+splits <- read_rds("splits.rds")
+```
+
+```{r, echo = FALSE}
+train <- training(splits)
+test <- testing(splits)
+```
+
+
+## EDA
+
+### Age group + Gender
+
+```{r}
+range(train$est_age)
+```
+
+```{r}
+train %>% 
+  select(covid_vaccination, est_age, sex_cd) %>% 
+  mutate(age_group = cut(est_age, 
+                         include.lowest = TRUE, 
+                         breaks = c(20, 55, 65, 75, 104),
+                         labels = c("[20-55]", "(55-65]", "(65-75]", "75+"))) %>% 
+  group_by(age_group, sex_cd) %>% 
+  summarize(n = n(),
+            n_vac = sum(covid_vaccination == "vacc"),
+            pct_vac = n_vac / n) %>% 
+  ggplot(aes(pct_vac, age_group, fill = sex_cd)) + 
+  geom_col(position = "dodge") +
+  scale_x_continuous(labels = scales::percent) +
+  labs(y = "Age Group",
+       x = "Percent Vaccinated",
+       fill = "Gender")
+```
+
+Clearly a trend here, older people tend to have higher vaccination rate.
+
+Within each age group, women also have higher vaccination rate than men. This trend also holds overall (no Simpson paradox here)
+
+```{r}
+train %>% 
+  select(covid_vaccination, sex_cd) %>% 
+  group_by(sex_cd) %>% 
+  summarize(n = n(),
+            n_vac = sum(covid_vaccination == "vacc"),
+            pct_vac = n_vac / n)
+```
+
+### `src_div_id`: The division ID assigned by the legacy system {each
+platform has a different system}
+
+```{r}
+train %>% 
+  select(covid_vaccination, src_div_id) %>% 
+  mutate(src_div_id = str_remove(src_div_id, "00")) %>% 
+  drop_na() %>% 
+  group_by(src_div_id) %>% 
+  summarize(n = n(),
+            n_vac = sum(covid_vaccination == "vacc"),
+            pct_vac = n_vac / n) %>% 
+  mutate(src_div_id = fct_reorder(src_div_id, pct_vac)) %>% 
+  ggplot(aes(pct_vac, src_div_id, fill = src_div_id)) + 
+  geom_col(position = "dodge", show.legend = FALSE) +
+  scale_x_continuous(labels = scales::percent) +
+  labs(y = "Division ID ",
+       x = "Percent Vaccinated")
+```
+
+Divisions 0 and 1 have the lowest vaccinate rate.
+
+### `cms_orig_reas_entitle_cd`: Code indicating the original reason for entry into Medicare
+
+```{r}
+train %>% 
+  select(covid_vaccination, cms_orig_reas_entitle_cd) %>% 
+  drop_na() %>% 
+  group_by(cms_orig_reas_entitle_cd) %>% 
+  summarize(n = n(),
+            n_vac = sum(covid_vaccination == "vacc"),
+            pct_vac = n_vac / n) %>% 
+  mutate(cms_orig_reas_entitle_cd = as.factor(cms_orig_reas_entitle_cd),
+         cms_orig_reas_entitle_cd = fct_reorder(cms_orig_reas_entitle_cd, pct_vac)) %>% 
+  ggplot(aes(pct_vac, cms_orig_reas_entitle_cd, fill = cms_orig_reas_entitle_cd)) + 
+  geom_col(position = "dodge", show.legend = FALSE) +
+  scale_x_continuous(labels = scales::percent) +
+  labs(y = "Original reason for Medicare entry code",
+       x = "Percent Vaccinated")
+```
+
+Code 0 have higher rate than the rest
+
+### `cms_risk_adjustment_factor_a_amt`: Risk Adjustment Factor A Amount
+
+Look at histogram
+
+Original variable
+
+```{r}
+train %>% 
+  select(covid_vaccination, cms_risk_adjustment_factor_a_amt) %>% 
+  drop_na() %>% 
+  ggplot(aes(cms_risk_adjustment_factor_a_amt, fill = covid_vaccination)) +
+  geom_histogram(alpha = 0.8)
+```
+
+Distribution is kinda skewed, so try a log base 10 transformation
+
+```{r}
+train %>% 
+  select(covid_vaccination, cms_risk_adjustment_factor_a_amt) %>% 
+  drop_na() %>% 
+  ggplot(aes(cms_risk_adjustment_factor_a_amt, fill = covid_vaccination)) +
+  geom_histogram(alpha = 0.8) +
+  scale_x_log10()
+```
+
+### `zip_cd`: Zip code
+
+Top 25 zip code with highest vaccination %
+
+```{r}
+train %>% 
+  select(covid_vaccination, zip_cd) %>% 
+  mutate(zip_cd = as.character(zip_cd)) %>% 
+  drop_na() %>% 
+  group_by(zip_cd) %>% 
+  summarize(n = n(),
+            n_vac = sum(covid_vaccination == "vacc"),
+            pct_vac = n_vac / n) %>% 
+  slice_max(n = 25, order_by = n) %>% 
+  mutate(zip_cd = ifelse(str_length(zip_cd) == 3, str_c("00", zip_cd), zip_cd),
+         zip_cd = fct_reorder(zip_cd, pct_vac)) %>% 
+  ggplot(aes(pct_vac, zip_cd, fill = zip_cd)) + 
+  geom_col(show.legend = FALSE) +
+  scale_x_continuous(labels = scales::percent) +
+    labs(y = "Zip code",
+       x = "Percent Vaccinated")
+```
+
+Where are these places???
+
+```{r}
+library(zipcodeR)
+```
+
+```{r}
+train %>% 
+  select(covid_vaccination, zip_cd) %>% 
+  mutate(zip_cd = as.character(zip_cd)) %>% 
+  drop_na() %>% 
+  group_by(zip_cd) %>% 
+  summarize(n = n(),
+            n_vac = sum(covid_vaccination == "vacc"),
+            pct_vac = n_vac / n) %>% 
+  slice_max(n = 25, order_by = n) %>% 
+  mutate(zip_cd = ifelse(str_length(zip_cd) == 3, str_c("00", zip_cd), zip_cd)) %>% 
+  pull(zip_cd) %>% 
+  reverse_zipcode() %>% 
+  select(zipcode, post_office_city)
+```
+
+Some places couldn't be geocoded, but still...
+
